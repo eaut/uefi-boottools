@@ -18,10 +18,10 @@ Commands
 ====================
 
 uefi-update-bootmenu: 
-  add all kernels in /boot to the UEFI boot menue
+  add all kernels in /boot to the UEFI boot menu
 
 uefi-boot2setup:
-  trigger boot to UEFI firmware setup on next system boot
+  start UEFI setup on next system boot
 
 uefi-secureboot:
   determine if system was booted in secure boot mode

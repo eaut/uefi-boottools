@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# ---------------------------------------------------------
+# start UEFI firmware setup on next boot
+# (C) 2015 Erich Boehm, License: GPLv3
+# ---------------------------------------------------------
+
+if [[ $EUID -ne 0 ]]; then
+  echo "This script must be run as root" 1>&2
+  exit 1
+fi
+
+# ---------------------------------------------------------
+# UEFI variables for booting to UEFI firmware setup UI
+# ---------------------------------------------------------
+#
+# - Page 312 of UEFI spec 2.3.1C
+#
+# The EFI_OS_INDICATIONS_BOOT_TO_FW_UI bit can be set in the 
+# OsIndicationsSupported variable by the firmware, if the 
+# firmware supports OS requests to stop at a firmware user
+# interface. 
+#
+# The EFI_OS_INDICATIONS_BOOT_TO_FW_UI bit can be set by the
+# OS in the OsIndications variable, if the OS desires for 
+# the firmware to stop at a firmware user interface on the
+# next boot.
+#
+# OsIndications variable returns a UINT64 bitmask
+# OsIndicationsSupported variable returns a UINT64 bitmask
+# EFI_OS_INDICATIONS_BOOT_TO_FW_UI=0x0000000000000001
+
+EFI_VARS_DIR=/sys/firmware/efi/efivars
+EFI_GLOBAL_VARIABLE=8be4df61-93ca-11d2-aa0d-00e098032b8c
+EFI_OS_INDICATIONS_BOOT_TO_FW_UI=1
+
+OsIndicationsSupported="$(cat $EFI_VARS_DIR/OsIndicationsSupported-$EFI_GLOBAL_VARIABLE | od -An -t u8 --read-bytes=8 --skip-bytes=4)"
+
+# check if boot to firmware setup is supported
+if [ "$(( $OsIndicationsSupported & $EFI_OS_INDICATIONS_BOOT_TO_FW_UI))" = $EFI_OS_INDICATIONS_BOOT_TO_FW_UI ]; then
+
+  # read OsIndications variable from efivars filesystem
+  OsIndications_attr="$(cat $EFI_VARS_DIR/OsIndications-$EFI_GLOBAL_VARIABLE | od -An -t u4 --read-bytes=4)"
+  OsIndications_data="$(cat $EFI_VARS_DIR/OsIndications-$EFI_GLOBAL_VARIABLE | od -An -t u8 --read-bytes=8 --skip-bytes=4)"
+
+  # set boot to firmware setup bit
+  OsIndications_data=$(( $OsIndications_data | $EFI_OS_INDICATIONS_BOOT_TO_FW_UI))
+
+  # --------------------------------------------------------------
+  # UGLY HACK: BASH DOES NOT SUPPORT BINARY DATA OPERATIONS
+  # --------------------------------------------------------------
+  # convert OsIndications attr and data values to little endian
+  # binary string representation in printf format and write 
+  # data to efivars filesystem
+  # --------------------------------------------------------------
+  BINSTR=$(printf "%08x" $OsIndications_attr | sed -r -e 's/(..)(..)(..)(..)/\\x\4\\x\3\\x\2\\x\1/') 
+  BINSTR="$BINSTR$(printf "%016x" $OsIndications_data | sed -r -e 's/(..)(..)(..)(..)(..)(..)(..)(..)/\\x\8\\x\7\\x\6\\x\5\\x\4\\x\3\\x\2\\x\1/')"
+  printf "$BINSTR" > $EFI_VARS_DIR/OsIndications-$EFI_GLOBAL_VARIABLE
+  echo "UEFI firmware will start setup during next boot."
+
+fi

@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# ---------------------------------------------------------
+# Interactive menu to select boot menu entry to boot
+# (C) 2015 Erich Boehm, License: GPLv3
+# ---------------------------------------------------------
+
+if [ "$1" == "always" ]; then
+  BOOTNEXT=false
+elif [ "$1" == "nextboot" ]; then
+  BOOTNEXT=true
+else
+  echo "usage: $0 <always|nextboot>"
+  exit 1
+fi
+
+# make sure this script is run by root
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+BOOTCURRENT=$(efibootmgr | egrep '^BootCurrent' | cut -f2 -d:)
+DIAGLST=()
+DIAGLEN=0
+export IFS=$'\n'
+for line in $(efibootmgr | egrep '^Boot[[:digit:]]{4}'); do
+  DIAGLEN=$(($DIAGLEN+1))
+  NR=$(echo $line | cut -f1 -d'*')
+  NR=${NR##Boot}
+  NAME=$(echo $line | sed -e 's/^.*\* //')
+  if [ $NR -eq $BOOTCURRENT ]; then
+    DIAGLST+=($NR "$NAME" on)
+  else
+    DIAGLST+=($NR "$NAME" off)
+  fi
+done
+
+TMPFILE="/tmp/dialog-$$"
+
+if [ $BOOTNEXT = true ]; then
+  TITLE="Select entry to start on NEXT system boot"
+else
+  TITLE="Select entry to ALWAYS start on system boot"
+fi
+
+dialog --no-tags --backtitle "UEFI boot menu" \
+       --radiolist $TITLE 10 60 \
+       $DIAGLEN "${DIAGLST[@]}" 2> $TMPFILE
+
+RET=$?
+CHOICE=$(cat $TMPFILE)
+rm $TMPFILE
+clear
+
+if [ $RET -eq 0 ]; then
+
+  # set boot target
+  if [ $BOOTNEXT = true ]; then
+    efibootmgr --bootnext $CHOICE
+    # select grub boot menu entry
+    #grub-set-default 2
+  else
+    efibootmgr --bootorder $CHOICE --delete-bootnext
+  fi
+
+else
+
+  echo "No changes were made."
+
+fi

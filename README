@@ -1,0 +1,78 @@
+UEFI boot tools
+====================
+
+A collection of scripts to manage UEFI boot menu entries for Ubuntu 
+kernels in order to directly boot Ubuntu from a UEFI partition, 
+i.e. without using Grub2 altogether.  
+
+Motivation:
+Once you activate the "Ultra Fastboot" option in your UEFI firmware
+to reduce boot times, all USB keyboards are not activated any more. 
+So why lengthen the boot process by loading Grub when you can not
+select anything there?
+
+Additionally you can simplify the chain of trust for UEFI Secure Boot.
+Only the signed Ubuntu kernel has to be verified with Canonical's key.
+
+Commands
+====================
+
+uefi-update-bootmenu: 
+  add all kernels in /boot to the UEFI boot menue
+
+uefi-boot2setup:
+  trigger boot to UEFI firmware setup on next system boot
+
+uefi-secureboot:
+  determine if system was booted in secure boot mode
+
+uefi-select-bootentry:
+  select boot menu entry via UI dialog - more comfortable than efibootmgr
+
+zz-update-uefi:
+  script to call "uefi-update-bootmenu" after kernel package installs/updates
+
+canonical:
+  scripts and keys provided by Canonical to install UEFI secure boot keys for Ubuntu
+
+Installation
+====================
+
+1) install UEFI boot tool scripts
+
+  # install command line tools
+  sudo cp uefi-* /usr/sbin/
+
+  # install post kernel install/update hook
+  echo /etc/kernel/post*.d/ | xargs -n 1 sudo cp zz-update-uefi
+
+2) install secure boot tools and kernel
+
+  # install secure boot tools and kernel
+  sudo apt-get install sbsigntool openssl
+  sudo apt-get install grub-efi-amd64-signed linux-signed-generic
+  # install canonical secure boot keys
+  cd canonical
+  sudo ./canonical/sb-setup enroll canonical
+  # fix ownership
+  sudo chown -R root.root /etc/secureboot/
+
+3) add Ubuntu kernels to uefi boot menu
+  sudo uefi-update-bootmenu
+
+4) enter UEFI firmware setup
+  sudo uefi-boot2setup
+  sudo shutdown -rf now
+
+5) activate secure boot in your firmware setup and boot again 
+  # this step depends on your computers UEFI firmware
+
+6) check if your system was booted using 
+  uefi-secureboot 
+
+References
+====================
+
+https://wiki.ubuntu.com/SecurityTeam/SecureBoot
+https://wiki.archlinux.org/index.php/Unified_Extensible_Firmware_Interface
+https://wiki.gentoo.org/wiki/Sakaki%27s_EFI_Install_Guide/Configuring_Secure_Boot

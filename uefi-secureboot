@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# ---------------------------------------------------------
+# determine if the system was booted in secure boot mode
+# (C) 2015 Erich Boehm, License: GPLv3
+# ---------------------------------------------------------
+
+EFIFS="/sys/firmware/efi/efivars"
+EFIVAR="SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c"
+
+SECURE=$(cat "$EFIFS/$EFIVAR" | od -An -t u1 --read-bytes=1 --skip-bytes=4)
+
+if [ "$SECURE" -eq 1 ]; then
+  echo "Secure Boot: ACTIVE"
+  exit 0
+else
+  echo "Secure Boot: INACTIVE"
+  exit 1
+fi

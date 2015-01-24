@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# ---------------------------------------------------------
+# Create UEFI boot menu entries to directly boot Ubuntu kernels
+# (C) 2015 Erich Boehm, License: GPLv3
+# ---------------------------------------------------------
+#
+# REMARKS:
+#  * all boot menu entries named "Ubuntu-*" are modified/deleted 
+#    by this script
+#  * separate menu entry for grub is added as fallback option
+#  * ensure that /etc/initramfs-tools/conf.d/resume is correct to 
+#    enable resume after hibernation (when changed rebuild 
+#    initramfs with 'sudo update-initramfs -u')
+# ---
+
+# make sure this script is run as root
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+# determine partition UUIDs
+EFI_UUID="$(blkid -s UUID -o value $(df --output=source /boot/efi/ | tail -n -1))"
+ROOT_UUID="$(blkid -s UUID -o value $(df --output=source / | tail -n -1))"
+
+# determine efibootmgr disk parameters
+EFIDEVICE=$(blkid -U $EFI_UUID)
+EFIPART=${EFIDEVICE:(-1)}
+EFIDISK=${EFIDEVICE%$EFIPART}
+
+# make sure ubuntu subdir exists on EFI partition and go there
+EFIDIR="/boot/efi/EFI/ubuntu"
+mkdir -p "$EFIDIR"
+cd "$EFIDIR"
+
+# remove existing ubuntu kernel files
+rm vmlinuz-* initrd-*
+
+# remove existing EFI boot entries named 'Ubuntu-*'
+for b in $(sudo efibootmgr | egrep '^Boot[[:digit:]]{4}' | grep Ubuntu- | cut -f1 -d'*'); do
+  BOOTNUM=${b##Boot}
+  efibootmgr --quiet --bootnum $BOOTNUM --delete-bootnum
+done
+
+# create EFI boot menu entry for grub fallback
+efibootmgr --quiet --create --disk "$EFIDISK" --part "$EFIPART" \
+  --label "Ubuntu-grub" \
+  --loader "\\EFI\\ubuntu\\shimx64.efi"
+
+# general kernel boot parameters
+OPTIONS="root=UUID=$ROOT_UUID ro quiet splash"
+
+# copy kernel files an create a boot entry per kernel
+for f in /boot/vmlinuz-*-generic.efi.signed; do
+  # kernel version
+  KV=${f##*vmlinuz-}
+  KV=${KV%%-generic.efi.signed}
+
+  # kernel file names
+  KERNEL="vmlinuz-$KV"
+  INITRD="initrd-$KV"
+
+  # copy kernel files to $EFIDIR
+  cp "$f" "$KERNEL"
+  cp "/boot/initrd.img-$KV-generic" "$INITRD"
+
+  # create EFI boot menu entry
+  efibootmgr --quiet --create --disk "$EFIDISK" --part "$EFIPART" \
+    --label "Ubuntu-$KV" \
+    --loader "\\EFI\\ubuntu\\$KERNEL" \
+    --unicode "initrd=\\EFI\\ubuntu\\$INITRD $OPTIONS"
+
+done
+
+# get EFI boot entry number for last added kernel
+BOOTNUM=$(efibootmgr | grep "Ubuntu-$KV" | cut -f1 -d'*')
+BOOTNUM=${BOOTNUM##Boot}
+
+# as default boot latest kernel
+efibootmgr --bootorder $BOOTNUM

@@ -18,7 +18,7 @@ Commands
 ====================
 
 uefi-update-bootmenu: 
-  add all kernels in /boot to the UEFI boot menu
+  add all SIGNED kernels in /boot to the UEFI boot menu
 
 uefi-boot2setup:
   start UEFI setup on next system boot

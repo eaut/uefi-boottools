@@ -46,6 +46,9 @@ Installation
   # install post kernel install/update hook
   echo /etc/kernel/post*.d/ | xargs -n 1 sudo cp zz-update-uefi
 
+  # install /etc/default/uefi-boot config file
+  sudo cp uefi-boot /etc/default/
+
 2) install secure boot tools and kernel
 
   # install secure boot tools and kernel

@@ -1,0 +1,14 @@
+#
+# config file for uefi-boottools
+#
+#
+# install signed kernels from /boot/ 
+#UEFI_INSTALL_SIGNED=true
+
+# used for naming boot menu entries
+#UEFI_DISTRIBUTOR="Ubuntu"
+
+#
+# kernel boot options 
+#
+#UEFI_KERNEL_CMD_LINE="quiet splash"

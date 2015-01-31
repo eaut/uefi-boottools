@@ -20,6 +20,17 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# read configuration from /etc/default
+if [ -r /etc/default/uefi-boot ] ; then
+  source /etc/default/uefi-boot
+fi
+
+# set default name for boot entries
+UEFI_DISTRIBUTOR="${UEFI_DISTRIBUTOR:=$(lsb_release -i -s 2> /dev/null || echo Ubuntu)}"
+
+# set default kernel boot parameters
+UEFI_KERNEL_CMD_LINE="${UEFI_KERNEL_CMD_LINE:=quiet splash}"
+
 # determine partition UUIDs
 EFI_UUID="$(blkid -s UUID -o value $(df --output=source /boot/efi/ | tail -n -1))"
 ROOT_UUID="$(blkid -s UUID -o value $(df --output=source / | tail -n -1))"
@@ -32,30 +43,35 @@ EFIDISK=${EFIDEVICE%$EFIPART}
 # make sure ubuntu subdir exists on EFI partition and go there
 EFIDIR="/boot/efi/EFI/ubuntu"
 mkdir -p "$EFIDIR"
-cd "$EFIDIR"
+cd "$EFIDIR" || exit 1
 
 # remove existing ubuntu kernel files
 rm vmlinuz-* initrd-*
 
 # remove existing EFI boot entries named 'Ubuntu-*'
-for b in $(sudo efibootmgr | egrep '^Boot[[:digit:]]{4}' | grep Ubuntu- | cut -f1 -d'*'); do
+for b in $(sudo efibootmgr | egrep '^Boot[[:digit:]]{4}' | grep "$UEFI_DISTRIBUTOR-" | cut -f1 -d'*'); do
   BOOTNUM=${b##Boot}
   efibootmgr --quiet --bootnum $BOOTNUM --delete-bootnum
 done
 
 # create EFI boot menu entry for grub fallback
 efibootmgr --quiet --create --disk "$EFIDISK" --part "$EFIPART" \
-  --label "Ubuntu-grub" \
+  --label "$UEFI_DISTRIBUTOR-grub" \
   --loader "\\EFI\\ubuntu\\shimx64.efi"
 
-# general kernel boot parameters
-OPTIONS="root=UUID=$ROOT_UUID ro quiet splash"
+# kernel type
+KERNEL_TYPE="generic"
+
+if [ "$UEFI_INSTALL_SIGNED" = "true" ]; then
+  KERNEL_TYPE="${KERNEL_TYPE}.efi.signed"
+fi
 
 # copy kernel files an create a boot entry per kernel
-for f in /boot/vmlinuz-*-generic.efi.signed; do
+for f in /boot/vmlinuz-*-${KERNEL_TYPE} ; do
+
   # kernel version
   KV=${f##*vmlinuz-}
-  KV=${KV%%-generic.efi.signed}
+  KV=${KV%%-${KERNEL_TYPE}}
 
   # kernel file names
   KERNEL="vmlinuz-$KV"
@@ -67,9 +83,9 @@ for f in /boot/vmlinuz-*-generic.efi.signed; do
 
   # create EFI boot menu entry
   efibootmgr --quiet --create --disk "$EFIDISK" --part "$EFIPART" \
-    --label "Ubuntu-$KV" \
+    --label "$UEFI_DISTRIBUTOR-$KV" \
     --loader "\\EFI\\ubuntu\\$KERNEL" \
-    --unicode "initrd=\\EFI\\ubuntu\\$INITRD $OPTIONS"
+    --unicode "initrd=\\EFI\\ubuntu\\$INITRD root=UUID=$ROOT_UUID ro $UEFI_KERNEL_CMD_LINE"
 
 done
 

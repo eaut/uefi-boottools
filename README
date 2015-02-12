@@ -17,7 +17,7 @@ Only the signed Ubuntu kernel has to be verified with Canonical's key.
 Commands
 ====================
 
-uefi-update-bootmenu: 
+update-uefi-bootmenu: 
   add all SIGNED kernels in /boot to the UEFI boot menu
 
 uefi-boot2setup:
@@ -30,7 +30,7 @@ uefi-select-bootentry:
   select boot menu entry via UI dialog - more comfortable than efibootmgr
 
 zz-update-uefi:
-  script to call "uefi-update-bootmenu" after kernel package installs/updates
+  kernel hook script to call "uefi-update-bootmenu" after kernel package installs/updates
 
 canonical:
   scripts and keys provided by Canonical to install UEFI secure boot keys for Ubuntu

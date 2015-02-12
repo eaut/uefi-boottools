@@ -6,11 +6,11 @@
 # ---------------------------------------------------------
 #
 # REMARKS:
-#  * all boot menu entries named "Ubuntu-*" are modified/deleted 
+#  * all boot menu entries named "Ubuntu-*" are modified/deleted
 #    by this script
 #  * separate menu entry for grub is added as fallback option
-#  * ensure that /etc/initramfs-tools/conf.d/resume is correct to 
-#    enable resume after hibernation (when changed rebuild 
+#  * ensure that /etc/initramfs-tools/conf.d/resume is correct to
+#    enable resume after hibernation (when changed rebuild
 #    initramfs with 'sudo update-initramfs -u')
 # ---
 

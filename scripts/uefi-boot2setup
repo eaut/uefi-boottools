@@ -16,13 +16,13 @@ fi
 #
 # - Page 312 of UEFI spec 2.3.1C
 #
-# The EFI_OS_INDICATIONS_BOOT_TO_FW_UI bit can be set in the 
-# OsIndicationsSupported variable by the firmware, if the 
+# The EFI_OS_INDICATIONS_BOOT_TO_FW_UI bit can be set in the
+# OsIndicationsSupported variable by the firmware, if the
 # firmware supports OS requests to stop at a firmware user
-# interface. 
+# interface.
 #
 # The EFI_OS_INDICATIONS_BOOT_TO_FW_UI bit can be set by the
-# OS in the OsIndications variable, if the OS desires for 
+# OS in the OsIndications variable, if the OS desires for
 # the firmware to stop at a firmware user interface on the
 # next boot.
 #
@@ -50,10 +50,10 @@ if [ "$(( $OsIndicationsSupported & $EFI_OS_INDICATIONS_BOOT_TO_FW_UI))" = $EFI_
   # UGLY HACK: BASH DOES NOT SUPPORT BINARY DATA OPERATIONS
   # --------------------------------------------------------------
   # convert OsIndications attr and data values to little endian
-  # binary string representation in printf format and write 
+  # binary string representation in printf format and write
   # data to efivars filesystem
   # --------------------------------------------------------------
-  BINSTR=$(printf "%08x" $OsIndications_attr | sed -r -e 's/(..)(..)(..)(..)/\\x\4\\x\3\\x\2\\x\1/') 
+  BINSTR=$(printf "%08x" $OsIndications_attr | sed -r -e 's/(..)(..)(..)(..)/\\x\4\\x\3\\x\2\\x\1/')
   BINSTR="$BINSTR$(printf "%016x" $OsIndications_data | sed -r -e 's/(..)(..)(..)(..)(..)(..)(..)(..)/\\x\8\\x\7\\x\6\\x\5\\x\4\\x\3\\x\2\\x\1/')"
   printf "$BINSTR" > $EFI_VARS_DIR/OsIndications-$EFI_GLOBAL_VARIABLE
   echo "UEFI firmware will start setup during next boot."

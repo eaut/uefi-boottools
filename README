@@ -1,13 +1,13 @@
 UEFI boot tools
 ====================
 
-A collection of scripts to manage UEFI boot menu entries for Ubuntu 
-kernels in order to directly boot Ubuntu from a UEFI partition, 
-i.e. without using Grub2 altogether.  
+A collection of scripts to manage UEFI boot menu entries for Ubuntu
+kernels in order to directly boot Ubuntu from a UEFI partition,
+i.e. without using Grub2 altogether.
 
 Motivation:
 Once you activate the "Ultra Fastboot" option in your UEFI firmware
-to reduce boot times, all USB keyboards are not activated any more. 
+to reduce boot times, all USB keyboards are not activated any more.
 So why lengthen the boot process by loading Grub when you can not
 select anything there?
 
@@ -17,8 +17,8 @@ Only the signed Ubuntu kernel has to be verified with Canonical's key.
 Commands
 ====================
 
-update-uefi-bootmenu: 
-  add all SIGNED kernels in /boot to the UEFI boot menu
+update-uefi-bootmenu:
+  add all kernels in /boot to the UEFI boot menu
 
 uefi-boot2setup:
   start UEFI setup on next system boot
@@ -40,14 +40,7 @@ Installation
 
 1) install UEFI boot tool scripts
 
-  # install command line tools
-  sudo cp uefi-* /usr/sbin/
-
-  # install post kernel install/update hook
-  echo /etc/kernel/post*.d/ | xargs -n 1 sudo cp zz-update-uefi
-
-  # install /etc/default/uefi-boot config file
-  sudo cp uefi-boot /etc/default/
+  sudo make install
 
 2) install secure boot tools and kernel
 
@@ -61,17 +54,17 @@ Installation
   sudo chown -R root.root /etc/secureboot/
 
 3) add Ubuntu kernels to uefi boot menu
-  sudo uefi-update-bootmenu
+  sudo update-uefi-bootmenu
 
 4) enter UEFI firmware setup
   sudo uefi-boot2setup
   sudo shutdown -rf now
 
-5) activate secure boot in your firmware setup and boot again 
+5) activate secure boot in your firmware setup and boot again
   # this step depends on your computers UEFI firmware
 
-6) check if your system was booted using 
-  uefi-secureboot 
+6) check if your system was booted using
+  uefi-secureboot
 
 References
 ====================

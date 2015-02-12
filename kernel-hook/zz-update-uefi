@@ -2,7 +2,7 @@
 set -e
 
 # ---
-# put this script in /etc/kernel/post*.d/ to automatically update 
+# put this script in /etc/kernel/post*.d/ to automatically update
 # boot menu entries after kernel package updates
 # ---
 # script modified from Ubuntu 14.04 /etc/kernel/post*.d/zz-update-grub
